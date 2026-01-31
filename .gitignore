@@ -1,0 +1,19 @@
+# Bağımlılıklar (Bunlar her bilgisayarda npm install ile kurulur, yüklemeye gerek yok)
+node_modules/
+
+# VS Code Uzantı Çıktıları
+*.vsix
+
+# Log dosyaları
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Mac ve Windows sistem dosyaları
+.DS_Store
+Thumbs.db
+
+# VS Code özel ayarları (Kişisel ayarların GitHub'a gitmesin)
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
