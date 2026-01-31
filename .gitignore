@@ -21,3 +21,6 @@ Thumbs.db
 #Todo
 *.Todo
 *.todo
+#Paketler
+Packages/*.*
+Packages

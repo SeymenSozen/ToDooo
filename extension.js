@@ -35,7 +35,7 @@ function activate(context) {
             if (text.trim().length === 0) continue;
 
             // --- YENİ MANTIK: İLK 2 KELİME KONTROLÜ ---
-            const words = text.trim().toLowerCase().split(/\s+/);
+            const words = text.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
             const firstTwo = words.slice(0, 2).join(' ');
 
             const isError = firstTwo.includes('!e') || firstTwo.includes('!error') || firstTwo.includes('error:') || firstTwo.includes('e:') 
