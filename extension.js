@@ -19,8 +19,9 @@ function activate(context) {
         done2: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(50, 255, 50, 0.35)', isWholeLine: true, textDecoration: 'line-through opacity 0.6', before: { contentText: '✅', margin: '0 10px 0 5px' } }),
         done3: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(0, 255, 0, 0.50)', isWholeLine: true, textDecoration: 'line-through opacity 0.7', before: { contentText: '✅', margin: '0 10px 0 5px' } })
     };
-    // Hafızadan verileri al (Eğer yoksa boş bir nesne oluştur)
+
     let storage = context.globalState.get('todoo_data', {});
+
     function updateDecorations(editor) {
         if (!editor || !editor.document.fileName.endsWith('.todo')) return;
         
@@ -33,16 +34,27 @@ function activate(context) {
             const text = line.text;
             if (text.trim().length === 0) continue;
 
-            const headArea = text.substring(0, 15).toLowerCase();
-            const exclamationCount = (headArea.match(/!/g) || []).length;
-            const level = Math.min(exclamationCount, 3);
-            const isCritical = headArea.includes('error') || headArea.includes('bug');
+            // --- YENİ MANTIK: İLK 2 KELİME KONTROLÜ ---
+            const words = text.trim().toLowerCase().split(/\s+/);
+            const firstTwo = words.slice(0, 2).join(' ');
 
-            // Satır içeriğini hafızadaki listede ara
+            const isError = firstTwo.includes('!e') || firstTwo.includes('!error') || firstTwo.includes('error:') || firstTwo.includes('e:') 
+            const isBug = firstTwo.includes('!bug');
+
+            let level = 0;
+            if (firstTwo.includes('!!!')) level = 3;
+            else if (firstTwo.includes('!!')) level = 2;
+            else if (firstTwo.includes('!')) level = 1;
+
             if (fileState.includes(text)) {
                 ranges['done' + level].push(line.range);
             } else {
-                const key = (isCritical ? 'kırmızı' : 'sarı') + level;
+                let key;
+                if (isError || isBug) {
+                    key = 'kırmızı' + level;
+                } else {
+                    key = 'sarı' + level;
+                }
                 ranges[key].push(line.range);
             }
         }
