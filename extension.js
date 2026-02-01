@@ -1,6 +1,17 @@
 const vscode = require("vscode");
 
 function activate(ctx) {
+    ctx.subscriptions.push(vscode.workspace.onDidDeleteFiles(event => {
+        event.files.forEach(fileUri => {
+            const filePath = fileUri.fsPath;
+            if (Storage[filePath]) {
+                delete Storage[filePath]; // Hafızadan bu dosyayı siliyoruz
+                ctx.globalState.update('ToDoo_data', Storage);
+                console.log(`ToDoo: ${filePath} hafızadan temizlendi.`);
+            }
+        });
+    }));
+
     let IsUpdating = false;
     let isHighlightEnabled = ctx.globalState.get("ToDoo_highlight_enabled", true);
     let LineMargin = "0 10px 0 5px";
@@ -29,13 +40,26 @@ function activate(ctx) {
         Success3: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(0, 255, 0, 0.50)', isWholeLine: true }),
     };
 
+    // ✅ Storage'ı 'let' yapıyoruz ki güncellenebilsin
     let Storage = ctx.globalState.get('ToDoo_data', {});
 
     function updateDecorations(editor) {
         if (!editor || !editor.document.fileName.endsWith(".todo")) return;
         const FileName = editor.document.fileName;
-        const FileState = Storage[FileName] || [];
         
+        // ✅ FileState'i 'let' yapıyoruz
+        let FileState = Storage[FileName] || [];
+        const CurrentLineCount = editor.document.lineCount;
+        
+        // Geçersiz (dosya kısalınca dışarıda kalan) indexleri temizle
+        const ValidState = FileState.filter(lineIdx => parseInt(lineIdx) < CurrentLineCount);
+        
+        if (ValidState.length !== FileState.length) {
+            FileState = ValidState;
+            Storage[FileName] = FileState;
+            ctx.globalState.update('ToDoo_data', Storage);
+        }
+
         const IconRanges = { Warn1: [], Warn2: [], Warn3: [], Error1: [], Error2: [], Error3: [], Success1: [], Success2: [], Success3: [] };
         const HighLightRanges = { Warn1: [], Warn2: [], Warn3: [], Error1: [], Error2: [], Error3: [], Success1: [], Success2: [], Success3: [] };
 
@@ -52,10 +76,9 @@ function activate(ctx) {
             else if (FirstTwo.includes('!!')) lvl = 2;
 
             const IsError = FirstTwo.includes("!e") || FirstTwo.includes(":e") || FirstTwo.includes("error:");
-            const IsBug = FirstTwo.includes("!b") || FirstTwo.includes(":b")||FirstTwo.includes("bug:");
+            const IsBug = FirstTwo.includes("!b") || FirstTwo.includes(":b") || FirstTwo.includes("bug:");
             let Type = (IsError || IsBug) ? 'Error' : 'Warn';
 
-            // ✅ YENİ MANTIK: Metne değil, satır numarasına (i) bakıyoruz
             let currentKey = (FileState.includes(i.toString()) ? 'Success' : Type) + lvl;
 
             if (IconRanges[currentKey]) IconRanges[currentKey].push(Line.range);
@@ -73,7 +96,6 @@ function activate(ctx) {
         if (Selection) {
             isHighlightEnabled = Selection === 'Enable';
             await ctx.globalState.update("ToDoo_highlight_enabled", isHighlightEnabled);
-            vscode.window.showInformationMessage(`ToDoo Highlight ${isHighlightEnabled ? 'Aktif' : 'Devre Dışı'}`);
             if (vscode.window.activeTextEditor) updateDecorations(vscode.window.activeTextEditor);
         }
     }));
@@ -86,11 +108,14 @@ function activate(ctx) {
         const LineNumber = e.selections[0].start.line;
         const Line = Editor.document.lineAt(LineNumber);
         
+        // Hitbox: İlk 3 karakter (Senin istediğin hassas ayar)
         if (e.selections[0].start.character <= 3 && Line.text.trim().length > 0) {
             IsUpdating = true;
+            
+            // ✅ Storage'dan güncel veriyi çek
+            Storage = ctx.globalState.get('ToDoo_data', {});
             let FileState = Storage[Editor.document.fileName] || [];
             
-            // Satır numarasıyla işlem yap (String olarak sakla)
             const lineIdx = LineNumber.toString();
             if (FileState.includes(lineIdx)) {
                 FileState = FileState.filter(id => id !== lineIdx);
@@ -102,7 +127,6 @@ function activate(ctx) {
             await ctx.globalState.update('ToDoo_data', Storage);
             updateDecorations(Editor);
 
-            // Seri tıklama hilesi
             const newPos = new vscode.Position(LineNumber, e.selections[0].start.character + 1);
             Editor.selection = new vscode.Selection(newPos, newPos);
 
@@ -119,10 +143,7 @@ function activate(ctx) {
     if (vscode.window.activeTextEditor) updateDecorations(vscode.window.activeTextEditor);
 
     setTimeout(() => {
-        vscode.window.showInformationMessage(
-            "ToDoo V1.3.0 Aktif! Renklendirmeyi ayarlamak için Ctrl+Shift+P kullanabilirsiniz.",
-            "Anladım"
-        );
+        vscode.window.showInformationMessage("ToDoo V1.3.1 Aktif!", "Anladım");
     }, 2000);
 }
 

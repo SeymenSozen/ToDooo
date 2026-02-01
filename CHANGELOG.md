@@ -1,35 +1,37 @@
 Changelog
-Tüm önemli değişiklikler bu dosyada kayıt altında tutulacaktır.
+Tüm önemli teknik güncellemeler ve hata düzeltmeleri bu dosya üzerinden takip edilebilir.
+
+[1.3.1] - 2026-02-02
+✨ Eklendi
+Dosya Silme Takibi (File System Watcher): onDidDeleteFiles özelliği entegre edildi. Bir .todo dosyası VS Code içerisinden silindiğinde, o dosyaya ait hafıza (globalState) otomatik olarak temizlenir.
+
+Otomatik Hafıza Senkronizasyonu: Dosya içeriği manuel olarak temizlendiğinde veya satır sayısı azaltıldığında, hafızadaki "hayalet" tikler (geçersiz indexler) anında ayıklanır.
+
+🐛 Düzeltildi
+Hafıza Sızıntısı ve Çakışma: Dosya silinip aynı isimle tekrar açıldığında eski verilerin gelmesi sorunu, dosya boyutu kontrolüyle giderildi.
+
+Değişken Hataları: const atama hataları giderilerek depolama (Storage) yönetimi daha stabil bir hale getirildi.
+
+⚙️ Değiştirildi
+Hassas Hitbox: Tıklama alanı, sadece ikonun üzerine odaklanacak şekilde 3 karakter (<= 3) olarak güncellendi.
 
 [1.3.0] - 2026-02-01
 ✨ Eklendi
-Seri Tıklama Desteği: Aynı satıra üst üste tıklandığında imleci otomatik olarak bir karakter kaydıran mekanizma eklendi. Bu sayede "boşluğa tıklayıp geri gelme" zorunluluğu ortadan kalktı, akıcı bir kullanım sağlandı.
+Seri Tıklama Desteği: Aynı satıra üst üste tıklandığında imleci kaydırarak event tetiklenmesini sağlayan mekanizma eklendi.
 
-Profesyonel Açılış Bildirimi: Uzantı uyandığında kullanıcıyı karşılayan ve komut paleti (Ctrl+Shift+P) kullanımını hatırlatan interaktif bir rehber mesajı eklendi.
-
-Dinamik Başlatma Güvencesi: Uzantının sadece .todo dosyası açıldığında değil, VS Code oturumu başladığında hazır olması sağlandı (onStartupFinished).
+Dinamik Başlatma: Uzantının onStartupFinished ile daha hızlı uyanması sağlandı.
 
 🐛 Düzeltildi
-Benzersiz Satır Kimliği (Index System): Aynı metne sahip satırların (örneğin iki ayrı "Python Çalış" satırı) aynı anda renk değiştirmesi bug'ı, metin bazlı kontrolden Satır İndeksi bazlı kontrol sistemine geçilerek kalıcı olarak çözüldü.
-
-Hitbox Hassasiyeti: Kullanıcı geri bildirimleri doğrultusunda, 20 karakterlik geniş tıklama alanı daha kontrollü bir deneyim için 6 karakterlik stratejik bir bölgeye daraltıldı.
-
-⚙️ Değiştirildi
-Bağımsız Katman Mimarisi: İkon dekorasyonları ve arka plan renklendirmeleri birbirinden ayrıldı. Kullanıcı renklendirmeyi kapatsa bile görev ikonları (logolar) rehberlik amacıyla görünür kalmaya devam ediyor.
+Benzersiz Satır Kimliği (Index System): Metin bazlı kontrolden Satır İndeksi bazlı kontrol sistemine geçilerek aynı isme sahip satırların çakışması engellendi.
 
 [1.1.1] - 2026-02-01
 🐛 Düzeltildi
-Whitespace Optimizasyonu: Satır başındaki veya kelime aralarındaki gereksiz boşlukların renklendirme algoritmasını bozması engellendi.
+Whitespace Optimizasyonu: Satır başındaki boşlukların renklendirmeyi bozması engellendi.
 
-Trigger Hataları: :e, error: gibi tetikleyicilerden sonra boşluk bırakıldığında oluşan "yanlış yeşil mod" hatası giderildi.
-
-⚙️ Değiştirildi
-Gelişmiş Kelime Ayrıştırma: Algoritma, cümle içindeki rastgele kelimeler yerine sadece satır başındaki gerçek komutlara odaklanacak şekilde kararlı hale getirildi.
+Trigger Hataları: :e ve error: komutlarından sonraki boşluk algılama hataları giderildi.
 
 [1.1.0] - 2026-02-01
 ✨ Eklendi
-Akıllı Çift Kelime Kontrolü: Satır başındaki ilk iki kelimeyi analiz eden akıllı tarama sistemi.
+Akıllı Çift Kelime Kontrolü: Satır başındaki ilk iki kelimeyi analiz eden tarama sistemi.
 
-Genişletilmiş Komut Desteği: !e, !error, error:, e: ve !bug kısayolları için tam entegrasyon.
-
-Hiyerarşik Öncelik Sistemi: Görevler için görsel hiyerarşi sağlayan seviye desteği (!!!, !!, !).
+Hiyerarşik Öncelik Sistemi: Görevler için !!!, !!, ! desteği eklendi.
