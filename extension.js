@@ -1,102 +1,129 @@
-const vscode = require('vscode');
+const vscode = require("vscode");
 
-function activate(context) {
-    let isUpdating = false; 
-    const deco = {
-        // --- SARI TONLARI ---
-        sarı0: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(235, 255, 0, 0.18)', isWholeLine: true, before: { contentText: '🔘', margin: '0 10px 0 5px' } }),
-        sarı1: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(242, 255, 0, 0.28)', isWholeLine: true, before: { contentText: '🔘', margin: '0 10px 0 5px' } }),
-        sarı2: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(250, 255, 0, 0.38)', isWholeLine: true, before: { contentText: '🔘', margin: '0 10px 0 5px' } }),
-        sarı3: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(255, 255, 0, 0.50)', isWholeLine: true, before: { contentText: '🔘', margin: '0 10px 0 5px' } }),
-        // --- KIRMIZI TONLARI (Error / Bug) ---
-        kırmızı0: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(255, 60, 60, 0.15)', isWholeLine: true, before: { contentText: '❌', margin: '0 10px 0 5px' } }),
-        kırmızı1: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(255, 40, 40, 0.25)', isWholeLine: true, before: { contentText: '❌', margin: '0 10px 0 5px' } }),
-        kırmızı2: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(255, 20, 20, 0.35)', isWholeLine: true, before: { contentText: '❌', margin: '0 10px 0 5px' } }),
-        kırmızı3: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(255, 0, 0, 0.45)', isWholeLine: true, before: { contentText: '❌', margin: '0 10px 0 5px' } }),
-        // --- YEŞİL TONLARI (Tamamlandı) ---
-        done0: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(50, 255, 50, 0.12)', isWholeLine: true, textDecoration: 'line-through opacity 0.5', before: { contentText: '✅', margin: '0 10px 0 5px' } }),
-        done1: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(50, 255, 50, 0.22)', isWholeLine: true, textDecoration: 'line-through opacity 0.5', before: { contentText: '✅', margin: '0 10px 0 5px' } }),
-        done2: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(50, 255, 50, 0.35)', isWholeLine: true, textDecoration: 'line-through opacity 0.6', before: { contentText: '✅', margin: '0 10px 0 5px' } }),
-        done3: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(0, 255, 0, 0.50)', isWholeLine: true, textDecoration: 'line-through opacity 0.7', before: { contentText: '✅', margin: '0 10px 0 5px' } })
+function activate(ctx) {
+    let IsUpdating = false;
+    let isHighlightEnabled = ctx.globalState.get("ToDoo_highlight_enabled", true);
+    let LineMargin = "0 10px 0 5px";
+
+    const IconDecoration = {
+        Warn1: vscode.window.createTextEditorDecorationType({ before: { contentText: "🔘", margin: LineMargin } }),
+        Warn2: vscode.window.createTextEditorDecorationType({ before: { contentText: "🔘", margin: LineMargin } }),
+        Warn3: vscode.window.createTextEditorDecorationType({ before: { contentText: "🔘", margin: LineMargin } }),
+        Error1: vscode.window.createTextEditorDecorationType({ before: { contentText: "❌", margin: LineMargin } }),
+        Error2: vscode.window.createTextEditorDecorationType({ before: { contentText: "❌", margin: LineMargin } }),
+        Error3: vscode.window.createTextEditorDecorationType({ before: { contentText: "❌", margin: LineMargin } }),
+        Success1: vscode.window.createTextEditorDecorationType({ before: { contentText: "✅", margin: LineMargin } }),
+        Success2: vscode.window.createTextEditorDecorationType({ before: { contentText: "✅", margin: LineMargin } }),
+        Success3: vscode.window.createTextEditorDecorationType({ before: { contentText: "✅", margin: LineMargin } }),
     };
 
-    let storage = context.globalState.get('todoo_data', {});
+    const HighLightDecoraton = {
+        Warn1: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(234, 255, 0, 0.30)', isWholeLine: true }),
+        Warn2: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(234, 255, 0, 0.40)', isWholeLine: true }),
+        Warn3: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(234, 255, 0, 0.50)', isWholeLine: true }),
+        Error1: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(255, 0, 0, 0.30)', isWholeLine: true }),
+        Error2: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(255, 0, 0, 0.40)', isWholeLine: true }),
+        Error3: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(255, 0, 0, 0.50)', isWholeLine: true }),
+        Success1: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(0, 255, 0, 0.30)', isWholeLine: true }),
+        Success2: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(0, 255, 0, 0.40)', isWholeLine: true }),
+        Success3: vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(0, 255, 0, 0.50)', isWholeLine: true }),
+    };
+
+    let Storage = ctx.globalState.get('ToDoo_data', {});
 
     function updateDecorations(editor) {
-        if (!editor || !editor.document.fileName.endsWith('.todo')) return;
+        if (!editor || !editor.document.fileName.endsWith(".todo")) return;
+        const FileName = editor.document.fileName;
+        const FileState = Storage[FileName] || [];
         
-        const fileName = editor.document.fileName;
-        const fileState = storage[fileName] || [];
-        const ranges = { sarı0: [], sarı1: [], sarı2: [], sarı3: [], kırmızı0: [], kırmızı1: [], kırmızı2: [], kırmızı3: [], done0: [], done1: [], done2: [], done3: [] };
+        const IconRanges = { Warn1: [], Warn2: [], Warn3: [], Error1: [], Error2: [], Error3: [], Success1: [], Success2: [], Success3: [] };
+        const HighLightRanges = { Warn1: [], Warn2: [], Warn3: [], Error1: [], Error2: [], Error3: [], Success1: [], Success2: [], Success3: [] };
 
         for (let i = 0; i < editor.document.lineCount; i++) {
-            const line = editor.document.lineAt(i);
-            const text = line.text;
-            if (text.trim().length === 0) continue;
+            const Line = editor.document.lineAt(i);
+            const Text = Line.text;
+            if (Text.trim().length === 0) continue;
 
-            // --- YENİ MANTIK: İLK 2 KELİME KONTROLÜ ---
-            const words = text.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
-            const firstTwo = words.slice(0, 2).join(' ');
+            const Words = Text.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
+            const FirstTwo = Words.slice(0, 2).join(' ');
 
-            const isError = firstTwo.includes('!e') || firstTwo.includes('!error') || firstTwo.includes('error:') || firstTwo.includes('e:') 
-            const isBug = firstTwo.includes('!bug');
+            let lvl = 1;
+            if (FirstTwo.includes('!!!')) lvl = 3;
+            else if (FirstTwo.includes('!!')) lvl = 2;
 
-            let level = 0;
-            if (firstTwo.includes('!!!')) level = 3;
-            else if (firstTwo.includes('!!')) level = 2;
-            else if (firstTwo.includes('!')) level = 1;
+            const IsError = FirstTwo.includes("!e") || FirstTwo.includes(":e") || FirstTwo.includes("error:");
+            const IsBug = FirstTwo.includes("!b") || FirstTwo.includes(":b")||FirstTwo.includes("bug:");
+            let Type = (IsError || IsBug) ? 'Error' : 'Warn';
 
-            if (fileState.includes(text)) {
-                ranges['done' + level].push(line.range);
-            } else {
-                let key;
-                if (isError || isBug) {
-                    key = 'kırmızı' + level;
-                } else {
-                    key = 'sarı' + level;
-                }
-                ranges[key].push(line.range);
+            // ✅ YENİ MANTIK: Metne değil, satır numarasına (i) bakıyoruz
+            let currentKey = (FileState.includes(i.toString()) ? 'Success' : Type) + lvl;
+
+            if (IconRanges[currentKey]) IconRanges[currentKey].push(Line.range);
+            if (isHighlightEnabled && HighLightRanges[currentKey]) {
+                HighLightRanges[currentKey].push(Line.range);
             }
         }
-        Object.keys(deco).forEach(key => editor.setDecorations(deco[key], ranges[key]));
+        
+        Object.keys(IconDecoration).forEach(K => editor.setDecorations(IconDecoration[K], IconRanges[K]));
+        Object.keys(HighLightDecoraton).forEach(K => editor.setDecorations(HighLightDecoraton[K], HighLightRanges[K]));
     }
 
-    context.subscriptions.push(
-        vscode.window.onDidChangeTextEditorSelection(async (e) => {
-            if (isUpdating || e.kind !== 2 || !e.selections[0].isEmpty) return;
-            const editor = e.textEditor;
-            if (!editor || !editor.document.fileName.endsWith('.todo')) return;
+    ctx.subscriptions.push(vscode.commands.registerCommand('todoo.setHighlight', async () => {
+        const Selection = await vscode.window.showQuickPick(['Enable', 'Disable'], { placeHolder: "ToDoo highlight configuration" });
+        if (Selection) {
+            isHighlightEnabled = Selection === 'Enable';
+            await ctx.globalState.update("ToDoo_highlight_enabled", isHighlightEnabled);
+            vscode.window.showInformationMessage(`ToDoo Highlight ${isHighlightEnabled ? 'Aktif' : 'Devre Dışı'}`);
+            if (vscode.window.activeTextEditor) updateDecorations(vscode.window.activeTextEditor);
+        }
+    }));
 
-            const selection = e.selections[0];
-            const line = editor.document.lineAt(selection.start.line);
-            const fileName = editor.document.fileName;
+    ctx.subscriptions.push(vscode.window.onDidChangeTextEditorSelection(async (e) => {
+        if (IsUpdating || e.kind !== 2 || !e.selections[0].isEmpty) return;
+        const Editor = e.textEditor;
+        if (!Editor || !Editor.document.fileName.endsWith(".todo")) return;
 
-            if (selection.start.character <= 8 && line.text.trim().length > 0) {
-                isUpdating = true;
-                
-                let fileState = storage[fileName] || [];
-                if (fileState.includes(line.text)) {
-                    fileState = fileState.filter(t => t !== line.text);
-                } else {
-                    fileState.push(line.text);
-                }
-                
-                storage[fileName] = fileState;
-                await context.globalState.update('todoo_data', storage);
-                
-                updateDecorations(editor);
-                setTimeout(() => { isUpdating = false; }, 200);
+        const LineNumber = e.selections[0].start.line;
+        const Line = Editor.document.lineAt(LineNumber);
+        
+        if (e.selections[0].start.character <= 3 && Line.text.trim().length > 0) {
+            IsUpdating = true;
+            let FileState = Storage[Editor.document.fileName] || [];
+            
+            // Satır numarasıyla işlem yap (String olarak sakla)
+            const lineIdx = LineNumber.toString();
+            if (FileState.includes(lineIdx)) {
+                FileState = FileState.filter(id => id !== lineIdx);
+            } else {
+                FileState.push(lineIdx);
             }
-        })
-    );
+
+            Storage[Editor.document.fileName] = FileState;
+            await ctx.globalState.update('ToDoo_data', Storage);
+            updateDecorations(Editor);
+
+            // Seri tıklama hilesi
+            const newPos = new vscode.Position(LineNumber, e.selections[0].start.character + 1);
+            Editor.selection = new vscode.Selection(newPos, newPos);
+
+            setTimeout(() => { IsUpdating = false; }, 100);
+        }
+    }));
 
     vscode.workspace.onDidChangeTextDocument(ev => {
         if (vscode.window.activeTextEditor && ev.document === vscode.window.activeTextEditor.document) updateDecorations(vscode.window.activeTextEditor);
-    }, null, context.subscriptions);
+    }, null, ctx.subscriptions);
 
-    vscode.window.onDidChangeActiveTextEditor(editor => { if (editor) updateDecorations(editor); }, null, context.subscriptions);
+    vscode.window.onDidChangeActiveTextEditor(editor => { if (editor) updateDecorations(editor); }, null, ctx.subscriptions);
 
     if (vscode.window.activeTextEditor) updateDecorations(vscode.window.activeTextEditor);
+
+    setTimeout(() => {
+        vscode.window.showInformationMessage(
+            "ToDoo V1.3.0 Aktif! Renklendirmeyi ayarlamak için Ctrl+Shift+P kullanabilirsiniz.",
+            "Anladım"
+        );
+    }, 2000);
 }
 
 exports.activate = activate;
